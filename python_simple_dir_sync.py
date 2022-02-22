@@ -33,7 +33,6 @@ dest_path=dest_path.replace('/','\\')
 src_files=[]
 dest_files=[] 
 
-log_f = open("D:/sync.txt", "w")
 print('list all files in source...')
 for subdir, dirs, files in os.walk(src_path):
     for file in files:
@@ -70,16 +69,6 @@ dest_files.sort(key=lambda x: x[1])
 
 
 print('done')
-print('Store...')
-with open("D:/src.txt", "w", encoding='utf-8') as log_f:
-    for f in src_files:
-        log_f.write(f[1]+';'+str(f[4])+'\n')
-with open("D:/dest.txt", "w", encoding='utf-8') as log_f:
-    for f in dest_files:
-        log_f.write(f[1]+';'+str(f[4])+'\n')
-
-print('done')
-
 
 print('Comparing...')
 
