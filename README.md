@@ -5,6 +5,7 @@ Scripts helping synchronize files/folders
 ## Simple dir sync
 
 Basic synchronization script between source and destination folders, currently supporting:
+
  [x] contributing (only copy and update) both directions
  [x] contributing from source to destination
  [x] contributing from destination to source
