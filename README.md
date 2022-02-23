@@ -9,5 +9,6 @@ Basic synchronization script between source and destination folders, currently s
 - [x] contributing (only copy and update) both directions
 - [x] contributing from source to destination
 - [x] contributing from destination to source
-- [ ] mirror (copy/update/delete)
+- [x] mirror (copy/update/delete)
+- [ ] delete empty folders when mirror
 - [ ] update both directions, deletions and updates both sides detected using logfile of previous sync
