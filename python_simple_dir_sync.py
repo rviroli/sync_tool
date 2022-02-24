@@ -13,8 +13,9 @@ BUF_SIZE = 65536
 ## sync_mode = '<>' # contribute (copy and update) both ways
 ## sync_mode = '>'  # contribute (copy and update) src to dest
 ## sync_mode = '<'  # contribute (copy and update) dest to src
-## sync_mode = '>>' # mirror (copy and update and delete) src to dest
-## sync_mode = '<<' # mirror (copy and update and delete) dest to src
+## sync_mode = '>>' # mirror (copy and update/revert and delete) src to dest
+## sync_mode = '<<' # mirror (copy and update/revert and delete) dest to src
+
 pairs=[
        #['D:\\Pictures\\2022' , 'F:\\photos\\2022' , '<>'],
        #['D:\\Documents\\Ref_Docs','F:\\Fichiers\\Ref_Docs','>'],
@@ -122,12 +123,12 @@ for folder_pair in pairs:
             if FLAG_DBG:
                 print('== '+f[0][1])
         else:
-            if (f[0][4]>f[1][4]) & ( (sync_mode=='<>') | (sync_mode=='>') | (sync_mode=='>>') ):
+            if   (sync_mode=='>>') | ((f[0][4]>f[1][4]) &  ((sync_mode=='<>') | (sync_mode=='>'))) :
                 if FLAG_PRINT:
                     print('>> '+f[0][1]+'\t'+str(f[0][4])+'\t'+str(f[1][4]))
                 if FLAG_EXECUTE:
                     shutil.copy2(f[0][2], f[1][2])
-            elif (sync_mode=='<>') | (sync_mode=='<') | (sync_mode=='<<'):
+            elif (sync_mode=='<<') | ((f[0][4]<f[1][4]) & ((sync_mode=='<>') | (sync_mode=='<'))):
                 if FLAG_PRINT:
                     print('<< '+f[0][1]+'\t'+str(f[0][4])+'\t'+str(f[1][4]))
                 if FLAG_EXECUTE:
@@ -157,7 +158,7 @@ for folder_pair in pairs:
     # Files in destination folder only
     for f in dest_only_files:
         dest=os.path.join(src_path, f[1])
-        if (sync_mode=='<>') | (sync_mode=='<'):
+        if (sync_mode=='<>') | (sync_mode=='<') | (sync_mode=='<<'):
             if FLAG_PRINT:
                 print(' <- '+f[1])
             if FLAG_EXECUTE:
