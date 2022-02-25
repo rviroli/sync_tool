@@ -23,6 +23,7 @@ pairs=[
 ##       ['D:\\Documents\\tmp' , 'D:\\\Downloads\\' , '<>'],
       ]
 
+ignore_str='_sync_ignore' # ignore files/path containing this string
 
 for folder_pair in pairs:
 
@@ -87,6 +88,12 @@ for folder_pair in pairs:
     dest_only_files=[]
     both_files=[]
     while True:
+        if ignore_str in src_files[-1]:
+            src_files.pop()
+            continue
+        if ignore_str in dest_files[-1]:
+            dest_files.pop()
+            continue
         if (dest_files[-1][1]==src_files[-1][1]):
     ##        print('A and B: '+dest_files[-1][1])
             both_files.append([src_files[-1] , dest_files[-1] ])
