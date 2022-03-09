@@ -3,7 +3,7 @@ import datetime
 import hashlib
 import shutil
 
-FLAG_EXECUTE = False
+flagExecute = False
 FLAG_DBG = False
 FLAG_PRINT = True
 
@@ -122,62 +122,78 @@ for folder_pair in pairs:
             break
 
     print('done')
+    # Perform sync:
 
-    # Files that are in both folder with same name, same location:
+    flagGoOn=True # flag to run the synchronization loop, first run only print, if applicable second run executes the sync
+    flagExecute=False
 
-    for f in both_files:
-        if (f[0][3]==f[1][3]) & (f[0][4]==f[1][4]):
-            if FLAG_DBG:
-                print('== '+f[0][1])
-        else:
-            if   (sync_mode=='>>') | ((f[0][4]>f[1][4]) &  ((sync_mode=='<>') | (sync_mode=='>'))) :
+    while flagGoOn:
+        flagGoOn=False # if no changes to by synced, the question whether to execute will not be asked
+        # Files that are in both folder with same name, same location:
+        for f in both_files:
+            if (f[0][3]==f[1][3]) & (f[0][4]==f[1][4]):
+                if FLAG_DBG:
+                    print('== '+f[0][1])
+            else:
+                if   (sync_mode=='>>') | ((f[0][4]>f[1][4]) &  ((sync_mode=='<>') | (sync_mode=='>'))) :
+                    flagGoOn=True # mark that there are changes pending
+                    if FLAG_PRINT:
+                        print('>> '+f[0][1]+'\t'+str(f[0][4])+'\t'+str(f[1][4]))
+                    if flagExecute:
+                        shutil.copy2(f[0][2], f[1][2])
+                elif (sync_mode=='<<') | ((f[0][4]<f[1][4]) & ((sync_mode=='<>') | (sync_mode=='<'))):
+                    flagGoOn=True # mark that there are changes pending
+                    if FLAG_PRINT:
+                        print('<< '+f[0][1]+'\t'+str(f[0][4])+'\t'+str(f[1][4]))
+                    if flagExecute:
+                        shutil.copy2(f[1][2], f[0][2])
+
+        # Files in source folder only
+        for f in src_only_files:
+            dest=os.path.join(dest_path, f[1])
+            if (sync_mode=='<>') | (sync_mode=='>') | (sync_mode=='>>'):
+                flagGoOn=True # mark that there are changes pending
                 if FLAG_PRINT:
-                    print('>> '+f[0][1]+'\t'+str(f[0][4])+'\t'+str(f[1][4]))
-                if FLAG_EXECUTE:
-                    shutil.copy2(f[0][2], f[1][2])
-            elif (sync_mode=='<<') | ((f[0][4]<f[1][4]) & ((sync_mode=='<>') | (sync_mode=='<'))):
+                    print('+> '+f[1])
+                if flagExecute:
+                    os.makedirs(os.path.dirname(dest), exist_ok=True)
+                    shutil.copy2(f[2], dest)
+            if (sync_mode=='<<') :
+                flagGoOn=True # mark that there are changes pending
                 if FLAG_PRINT:
-                    print('<< '+f[0][1]+'\t'+str(f[0][4])+'\t'+str(f[1][4]))
-                if FLAG_EXECUTE:
-                    shutil.copy2(f[1][2], f[0][2])
+                    print('xx '+f[1])
+                if flagExecute:
+                    try:
+                        os.remove(f[2])
+                    except OSError as e:
+                        print("Error: %s : %s" % (f[2], e.strerror))
 
-                
-
-    # Files in source folder only
-    for f in src_only_files:
-        dest=os.path.join(dest_path, f[1])
-        if (sync_mode=='<>') | (sync_mode=='>') | (sync_mode=='>>'):
-            if FLAG_PRINT:
-                print(' -> '+f[1])
-            if FLAG_EXECUTE:
-                os.makedirs(os.path.dirname(dest), exist_ok=True)
-                shutil.copy2(f[2], dest)
-        if (sync_mode=='<<') :
-            if FLAG_PRINT:
-                print(' xx '+f[1])
-            if FLAG_EXECUTE:
-                try:
-                    os.remove(f[2])
-                except OSError as e:
-                    print("Error: %s : %s" % (f[2], e.strerror))
-
-
-    # Files in destination folder only
-    for f in dest_only_files:
-        dest=os.path.join(src_path, f[1])
-        if (sync_mode=='<>') | (sync_mode=='<') | (sync_mode=='<<'):
-            if FLAG_PRINT:
-                print(' <- '+f[1])
-            if FLAG_EXECUTE:
-                os.makedirs(os.path.dirname(dest), exist_ok=True)
-                shutil.copy2(f[2], dest)
-        if (sync_mode=='>>') :
-            if FLAG_PRINT:
-                print(' xx '+f[1])
-            if FLAG_EXECUTE:
-                try:
-                    os.remove(f[2])
-                except OSError as e:
-                    print("Error: %s : %s" % (f[2], e.strerror))
-
+        # Files in destination folder only
+        for f in dest_only_files:
+            dest=os.path.join(src_path, f[1])
+            if (sync_mode=='<>') | (sync_mode=='<') | (sync_mode=='<<'):
+                flagGoOn=True # mark that there are changes pending
+                if FLAG_PRINT:
+                    print('<+ '+f[1])
+                if flagExecute:
+                    os.makedirs(os.path.dirname(dest), exist_ok=True)
+                    shutil.copy2(f[2], dest)
+            if (sync_mode=='>>') :
+                flagGoOn=True # mark that there are changes pending
+                if FLAG_PRINT:
+                    print('xx '+f[1])
+                if flagExecute:
+                    try:
+                        os.remove(f[2])
+                    except OSError as e:
+                        print("Error: %s : %s" % (f[2], e.strerror))
+        if flagExecute: # sync has just been executed, leave the loop
+            flagGoOn=False
+        elif flagGoOn: # some changes are pending
+            response=input("Execute synchronization? (yes/no)")
+            if response=="yes":
+                flagGoOn=True
+                flagExecute=True
+            else:
+                flagGoOn=False
 
