@@ -6,7 +6,7 @@ import math
 
 flagExecute = False     # Execute all sync actions without asking
 FLAG_DBG =    False     # Debug output
-FLAG_PRINT =  False     # List all sync actions 
+FLAG_PRINT =  True     # List all sync actions 
 
 BUF_SIZE = 65536
 
@@ -32,35 +32,43 @@ BUF_SIZE = 65536
 ##      ]
 
 pairs=[
-##       ['F:\\books' , 'E:\\books' , '>>'],
-##       ['F:\\Fichiers' , 'E:\\Fichiers' , '>>'],
+       ['F:\\books' , 'E:\\books' , '>>'],
+       ['F:\\Fichiers' , 'E:\\Fichiers' , '>>'],
 ##       ['F:\\Logiciels' , 'E:\\Logiciels' , '>>'],
-##       ['F:\\photos' , 'E:\\photos' , '>>'],
-       ['F:\\music' , 'E:\\music' , '>>'],
+       ['F:\\photos' , 'E:\\photos' , '>>'],
+##       ['F:\\music' , 'E:\\music' , '>>'],
       ]
 
 ##pairs=[
 ##       ['F:\\Fichiers' , 'E:\\Fichiers' , '>>'],
 ##      ]
 
+##pairs=[
+##
+##       ['D:\\Documents\\Ref_Docs','F:\\Fichiers\\Ref_Docs','<'],
+##       ['D:\\Documents\\papiers' , 'F:\\\Fichiers\\papiers' , '<>'],
+##       ['D:\\Documents\\Recettes' , 'F:\\Fichiers\\recettes' , '<>'],
+##      ]
+
 ignore_str=['SyncToy' , '_ignored'] # ignore files/path containing this string
 
-sumCopyL2R=0
-sumCopyR2L=0
-sumUpdtL2R=0
-sumUpdtR2L=0
-sumDeleteL=0
-sumDeleteR=0
 
-sizeCopyL2R=0
-sizeCopyR2L=0
-sizeUpdtL2R=0
-sizeUpdtR2L=0
-sizeDeleteL=0
-sizeDeleteR=0
 
 
 for folder_pair in pairs:
+    sumCopyL2R=0
+    sumCopyR2L=0
+    sumUpdtL2R=0
+    sumUpdtR2L=0
+    sumDeleteL=0
+    sumDeleteR=0
+
+    sizeCopyL2R=0
+    sizeCopyR2L=0
+    sizeUpdtL2R=0
+    sizeUpdtR2L=0
+    sizeDeleteL=0
+    sizeDeleteR=0
     src_path = folder_pair[0]
     dest_path = folder_pair[1]
     sync_mode = folder_pair[2]
@@ -238,12 +246,12 @@ for folder_pair in pairs:
                 sumDeleteR += 1
                 sizeDeleteR += f[3]
                 if FLAG_PRINT:
-                    print('xx '+f[1])
+                    print('xx '+f[2])
                 if flagExecute:
                     try:
                         os.remove(f[2])
                     except OSError as e:
-                        print('xx '+f[1])
+                        print('xx '+f[2])
                         print("Error: %s" % e.strerror)
                         
         # Files in source folder only
@@ -267,18 +275,22 @@ for folder_pair in pairs:
                 sumDeleteL += 1
                 sizeDeleteL += f[3]
                 if FLAG_PRINT:
-                    print('xx '+f[1])
+                    print('xx '+f[2])
                 if flagExecute:
                     try:
                         os.remove(f[2])
                     except OSError as e:
-                        print('xx '+f[1])
+                        print('xx '+f[2])
                         print("Error: %s : %s" % e.strerror)
 
         if flagExecute: # sync has just been executed, leave the loop
             flagGoOn=False
             print('- Sync completed\n')
         elif flagGoOn: # some changes are pending
+            if sumDeleteL>0:
+                print("xx delete left: "+str(sumDeleteL)+" ("+str(math.ceil(sizeDeleteL/1000)/1000)+" MB)")
+            if sumDeleteR>0:
+                print("xx delete right: "+str(sumDeleteR)+" ("+str(math.ceil(sizeDeleteR/1000)/1000)+" MB)")
             if sumCopyL2R>0:
                 print("+> copy from left to right: " + str(sumCopyL2R)+" ("+str(math.ceil(sizeCopyL2R/1000)/1000)+" MB)")
             if sumCopyR2L>0:            
@@ -287,10 +299,6 @@ for folder_pair in pairs:
                 print(">> update from left to right: "+str(sumUpdtL2R)+" ("+str(math.ceil(sizeUpdtL2R/1000)/1000)+" MB)")
             if sumUpdtR2L>0:
                 print("<< update from right to left: "+str(sumUpdtR2L)+" ("+str(math.ceil(sizeUpdtR2L/1000)/1000)+" MB)")
-            if sumDeleteL>0:
-                print("xx delete left: "+str(sumDeleteL)+" ("+str(math.ceil(sizeDeleteL/1000)/1000)+" MB)")
-            if sumDeleteR>0:
-                print("xx delete right: "+str(sumDeleteR)+" ("+str(math.ceil(sizeDeleteR/1000)/1000)+" MB)")
             response=input("Execute synchronization? (yes/no)")
             if response=="yes":
                 flagGoOn=True
