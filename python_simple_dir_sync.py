@@ -1,12 +1,11 @@
 import os
 import datetime
-import hashlib
+# import hashlib
 import shutil
 import math
 
-flagExecute = False     # Execute all sync actions without asking
 FLAG_DBG =    False     # Debug output
-FLAG_PRINT =  True     # List all sync actions 
+FLAG_PRINT =  True      # List all sync actions 
 
 BUF_SIZE = 65536
 
@@ -31,13 +30,13 @@ BUF_SIZE = 65536
 ##       ['D:\\Documents\\Recettes' , 'F:\\Fichiers\\recettes' , '>'],
 ##      ]
 
-pairs=[
-       ['F:\\books' , 'E:\\books' , '>>'],
-       ['F:\\Fichiers' , 'E:\\Fichiers' , '>>'],
+##pairs=[
+##       ['F:\\books' , 'E:\\books' , '>>'],
+##       ['F:\\Fichiers' , 'E:\\Fichiers' , '>>'],
 ##       ['F:\\Logiciels' , 'E:\\Logiciels' , '>>'],
-       ['F:\\photos' , 'E:\\photos' , '>>'],
+##       ['F:\\photos' , 'E:\\photos' , '>>'],
 ##       ['F:\\music' , 'E:\\music' , '>>'],
-      ]
+##      ]
 
 ##pairs=[
 ##       ['F:\\Fichiers' , 'E:\\Fichiers' , '>>'],
@@ -50,25 +49,36 @@ pairs=[
 ##       ['D:\\Documents\\Recettes' , 'F:\\Fichiers\\recettes' , '<>'],
 ##      ]
 
+BU_path="G:\\MemoryZone\\Backup\\"
+pairs=[
+       [BU_path+'Photos\\WhatsApp\\Media\\WhatsApp Images' , 'F:\\photos\\Mobile\\WhatsApp Images' , '>'],
+      ]
+
+
+
 ignore_str=['SyncToy' , '_ignored'] # ignore files/path containing this string
 
 
 
 
-for folder_pair in pairs:
-    sumCopyL2R=0
-    sumCopyR2L=0
-    sumUpdtL2R=0
-    sumUpdtR2L=0
-    sumDeleteL=0
-    sumDeleteR=0
+sum_copy_L2R=0
+sum_copy_R2L=0
+sum_update_L2R=0
+sum_update_R2L=0
+sum_delete_L=0
+sum_delete_R=0
 
-    sizeCopyL2R=0
-    sizeCopyR2L=0
-    sizeUpdtL2R=0
-    sizeUpdtR2L=0
-    sizeDeleteL=0
-    sizeDeleteR=0
+size_copy_L2R=0
+size_copy_R2L=0
+size_update_L2R=0
+size_update_R2L=0
+size_delete_L=0
+size_delete_R=0
+
+execute_copy=[]   # List of files to copy: 0=source, 1=destination, 2=sync comment
+execute_remove=[] # List of files to remove: 0=source, 1=sync comment
+
+for folder_pair in pairs:
     src_path = folder_pair[0]
     dest_path = folder_pair[1]
     sync_mode = folder_pair[2]
@@ -124,9 +134,9 @@ for folder_pair in pairs:
     dest_only_files=[]
     both_files=[]
     while True:
-        if any(strI in src_files[-1][0] for strI in ignore_str):
+        if any(ign_str in src_files[-1][1] for ign_str in ignore_str):
             src_files.pop()
-        elif any(strI in dest_files[-1][0] for strI in ignore_str):
+        elif any(ign_str in dest_files[-1][1] for ign_str in ignore_str):
             dest_files.pop()
         elif (dest_files[-1][1]==src_files[-1][1]):
     ##        print('A and B: '+dest_files[-1][1])
@@ -134,177 +144,147 @@ for folder_pair in pairs:
             dest_files.pop()
             src_files.pop()
         elif (dest_files[-1][1]>=src_files[-1][1]):
-    ##        print('B only: '+dest_files[-1][1])
+##            print('B only: '+dest_files[-1][1])
             dest_only_files.append(dest_files[-1])
             dest_files.pop()
         else:
-    ##        print('A only: '+src_files[-1][1])
+##            print('A only: '+src_files[-1][1])
             src_only_files.append(src_files[-1])
             src_files.pop()
             
         if (len(src_files)<1):
             while len(dest_files)>0:
-    ##            print('B only: '+dest_files[-1][1])
+##                print('B only: '+dest_files[-1][1])
                 dest_only_files.append(dest_files[-1])
                 dest_files.pop()
             break
         elif (len(dest_files)<1):
             while len(src_files)>0:
-    ##            print('A only: '+src_files[-1][1])
+##                print('A only: '+src_files[-1][1])
                 src_only_files.append(src_files[-1])
                 src_files.pop()
             break
 
     # Perform sync:
 
-    flagGoOn=True # flag to run the synchronization loop, first run only print, if applicable second run executes the sync
-    flagExecute=False
-
-    while flagGoOn:
-        flagGoOn=False # if no changes to by synced, the question whether to execute will not be asked
-        # Files that are in both folder with same name, same location:
-        for f in both_files:
-            if (f[0][3]==f[1][3]) & (f[0][4]==f[1][4]):
-                if FLAG_DBG:
-                    print('== '+f[0][1])
-            else:
-                if   (sync_mode=='>>') | ((f[0][4]>f[1][4]) &  ((sync_mode=='<>') | (sync_mode=='>'))) :
-                    flagGoOn=True # mark that there are changes pending
-                    sumUpdtL2R += 1
-                    sizeUpdtL2R += f[0][3]
-                    if FLAG_PRINT:
-                        if (f[0][4]>f[1][4]):
-                            dateComparison=' > '
-                            dateComment=' (use newer)'
-                        else:
-                            dateComparison=' < '
-                            dateComment=' (use older)'
-                        print('>> '+f[0][1]+'\t'+
-                            datetime.datetime.fromtimestamp(f[0][4]).strftime('%Y-%m-%d-%H:%M')+dateComparison+
-                            datetime.datetime.fromtimestamp(f[1][4]).strftime('%Y-%m-%d-%H:%M')+dateComment)
-                    if flagExecute:
-                        try:
-                            shutil.copy2(f[0][2], f[1][2])
-                        except OSError as e:
-                            if (f[0][4]>f[1][4]):
-                                dateComparison=' > '
-                                dateComment=' (use newer)'
-                            else:
-                                dateComparison=' < '
-                                dateComment=' (use older)'
-                            print('>> '+f[0][1]+'\t'+
-                                datetime.datetime.fromtimestamp(f[0][4]).strftime('%Y-%m-%d-%H:%M')+dateComparison+
-                                datetime.datetime.fromtimestamp(f[1][4]).strftime('%Y-%m-%d-%H:%M')+dateComment)
-                            print("Error : %s" %  e.strerror)
-                elif (sync_mode=='<<') | ((f[0][4]<f[1][4]) & ((sync_mode=='<>') | (sync_mode=='<'))):
-                    flagGoOn=True # mark that there are changes pending
-                    sumUpdtR2L += 1
-                    sizeUpdtR2L += f[1][3]
-                    if FLAG_PRINT:
-                        if (f[0][4]>f[1][4]):
-                            dateComparison=' > '
-                            dateComment=' (use older)'
-                        else:
-                            dateComparison=' < '
-                            dateComment=' (use newer)'
-                        print('<< '+f[0][1]+'\t'+str(f[0][4])+'\t'+
-                            datetime.datetime.fromtimestamp(f[0][4]).strftime('%Y-%m-%d-%H:%M')+dateComparison+
-                            datetime.datetime.fromtimestamp(f[1][4]).strftime('%Y-%m-%d-%H:%M')+dateComment)
-                    if flagExecute:
-                        try:
-                            shutil.copy2(f[1][2], f[0][2])
-                        except OSError as e:
-                            if (f[0][4]>f[1][4]):
-                                dateComparison=' > '
-                                dateComment=' (use older)'
-                            else:
-                                dateComparison=' < '
-                                dateComment=' (use newer)'
-                            print('<< '+f[0][1]+'\t'+str(f[0][4])+'\t'+
-                                datetime.datetime.fromtimestamp(f[0][4]).strftime('%Y-%m-%d-%H:%M')+dateComparison+
-                                datetime.datetime.fromtimestamp(f[1][4]).strftime('%Y-%m-%d-%H:%M')+dateComment)
-                            print("Error : %s" %  e.strerror)
-
-        # Files in destination folder only
-        for f in dest_only_files:
-            dest=os.path.join(src_path, f[1])
-            if (sync_mode=='<>') | (sync_mode=='<') | (sync_mode=='<<'):
-                flagGoOn=True # mark that there are changes pending
-                sumCopyR2L += 1
-                sizeCopyR2L += f[3]
-                if FLAG_PRINT:
-                    print('<+ '+f[1])
-                if flagExecute:
-                    try:
-                        os.makedirs(os.path.dirname(dest), exist_ok=True)
-                        shutil.copy2(f[2], dest)
-                    except OSError as e:
-                        print('<+ '+f[1])
-                        print("Error : %s" %  e.strerror)
-            if (sync_mode=='>>') :
-                flagGoOn=True # mark that there are changes pending
-                sumDeleteR += 1
-                sizeDeleteR += f[3]
-                if FLAG_PRINT:
-                    print('xx '+f[2])
-                if flagExecute:
-                    try:
-                        os.remove(f[2])
-                    except OSError as e:
-                        print('xx '+f[2])
-                        print("Error: %s" % e.strerror)
-                        
-        # Files in source folder only
-        for f in src_only_files:
-            dest=os.path.join(dest_path, f[1])
-            if (sync_mode=='<>') | (sync_mode=='>') | (sync_mode=='>>'):
-                flagGoOn=True # mark that there are changes pending
-                sumCopyL2R += 1
-                sizeCopyL2R += f[3]
-                if FLAG_PRINT:
-                    print('+> '+f[1])
-                if flagExecute:
-                    try:
-                        os.makedirs(os.path.dirname(dest), exist_ok=True)
-                        shutil.copy2(f[2], dest)
-                    except OSError as e:
-                        print('+> '+f[1])
-                        print("Error : %s" %  e.strerror)
-            if (sync_mode=='<<') :
-                flagGoOn=True # mark that there are changes pending
-                sumDeleteL += 1
-                sizeDeleteL += f[3]
-                if FLAG_PRINT:
-                    print('xx '+f[2])
-                if flagExecute:
-                    try:
-                        os.remove(f[2])
-                    except OSError as e:
-                        print('xx '+f[2])
-                        print("Error: %s : %s" % e.strerror)
-
-        if flagExecute: # sync has just been executed, leave the loop
-            flagGoOn=False
-            print('- Sync completed\n')
-        elif flagGoOn: # some changes are pending
-            if sumDeleteL>0:
-                print("xx delete left: "+str(sumDeleteL)+" ("+str(math.ceil(sizeDeleteL/1000)/1000)+" MB)")
-            if sumDeleteR>0:
-                print("xx delete right: "+str(sumDeleteR)+" ("+str(math.ceil(sizeDeleteR/1000)/1000)+" MB)")
-            if sumCopyL2R>0:
-                print("+> copy from left to right: " + str(sumCopyL2R)+" ("+str(math.ceil(sizeCopyL2R/1000)/1000)+" MB)")
-            if sumCopyR2L>0:            
-                print("<+ copy from right to left: " + str(sumCopyR2L)+" ("+str(math.ceil(sizeCopyR2L/1000)/1000)+" MB)")
-            if sumUpdtL2R>0:
-                print(">> update from left to right: "+str(sumUpdtL2R)+" ("+str(math.ceil(sizeUpdtL2R/1000)/1000)+" MB)")
-            if sumUpdtR2L>0:
-                print("<< update from right to left: "+str(sumUpdtR2L)+" ("+str(math.ceil(sizeUpdtR2L/1000)/1000)+" MB)")
-            response=input("Execute synchronization? (yes/no)")
-            if response=="yes":
-                flagGoOn=True
-                flagExecute=True
-            else:
-                flagGoOn=False
+    # Files that are in both folder with same name, same location:
+    for f in both_files:
+        if (f[0][3]==f[1][3]) & (f[0][4]==f[1][4]):
+            if FLAG_DBG:
+                print('== '+f[0][1])
         else:
-            print('- Folders are in sync\n')
+            if   (sync_mode=='>>') | ((f[0][4]>f[1][4]) &  ((sync_mode=='<>') | (sync_mode=='>'))) :
+                sum_update_L2R += 1
+                size_update_L2R += f[0][3]
+                if (f[0][4]>f[1][4]):
+                    dateComparison=' > '
+                    dateComment=' (use newer)'
+                else:
+                    dateComparison=' < '
+                    dateComment=' (use older)'
+                log_message=('>> '+f[0][1]+'\t'+
+                    datetime.datetime.fromtimestamp(f[0][4]).strftime('%Y-%m-%d-%H:%M')+dateComparison+
+                    datetime.datetime.fromtimestamp(f[1][4]).strftime('%Y-%m-%d-%H:%M')+dateComment)
+                execute_copy.append([f[0][2], f[1][2],log_message])
+                if FLAG_PRINT:
+                    print(log_message)
+            elif (sync_mode=='<<') | ((f[0][4]<f[1][4]) & ((sync_mode=='<>') | (sync_mode=='<'))):
+                sum_update_R2L += 1
+                size_update_R2L += f[1][3]
+                
+                if (f[0][4]>f[1][4]):
+                    dateComparison=' > '
+                    dateComment=' (use older)'
+                else:
+                    dateComparison=' < '
+                    dateComment=' (use newer)'
+                log_message=('<< '+f[0][1]+'\t'+str(f[0][4])+'\t'+
+                    datetime.datetime.fromtimestamp(f[0][4]).strftime('%Y-%m-%d-%H:%M')+dateComparison+
+                    datetime.datetime.fromtimestamp(f[1][4]).strftime('%Y-%m-%d-%H:%M')+dateComment)
+                if FLAG_PRINT:
+                    print(log_message)
+
+    # Files in destination folder only
+    for f in dest_only_files:
+        dest=os.path.join(src_path, f[1])
+        if (sync_mode=='<>') | (sync_mode=='<') | (sync_mode=='<<'):
+            sum_copy_R2L += 1
+            size_copy_R2L += f[3]
+            log_message=('<+ '+f[2])
+            execute_copy.append([f[2], dest, log_message])
+            if FLAG_PRINT:
+                print(log_message)
+        if (sync_mode=='>>') :
+            sum_delete_R += 1
+            size_delete_R += f[3]
+            log_message=('xx '+f[2])
+            execute_remove.append([f[2], log_message])
+            if FLAG_PRINT:
+                print(log_message)
+                    
+    # Files in source folder only
+    for f in src_only_files:
+        dest=os.path.join(dest_path, f[1])
+        if (sync_mode=='<>') | (sync_mode=='>') | (sync_mode=='>>'):
+            sum_copy_L2R += 1
+            size_copy_L2R += f[3]
+            log_message=('+> '+f[2])
+            execute_copy.append([f[2], dest, log_message])
+            if FLAG_PRINT:
+                print(log_message)
+        if (sync_mode=='<<') :
+            sum_delete_L += 1
+            size_delete_L += f[3]
+            log_message=('xx '+f[2])
+            execute_remove.append([f[2], log_message])
+            if FLAG_PRINT:
+                print(log_message)
+
+flag_changes=False # flag set when changes are found between source and destination folder pairs
+if sum_delete_L>0:
+    flag_changes=True;
+    print("xx delete left: "+str(sum_delete_L)+" ("+str(math.ceil(size_delete_L/1000)/1000)+" MB)")
+if sum_delete_R>0:
+    flag_changes=True;
+    print("xx delete right: "+str(sum_delete_R)+" ("+str(math.ceil(size_delete_R/1000)/1000)+" MB)")
+if sum_copy_L2R>0:
+    flag_changes=True;
+    print("+> copy from left to right: " + str(sum_copy_L2R)+" ("+str(math.ceil(size_copy_L2R/1000)/1000)+" MB)")
+if sum_copy_R2L>0:
+    flag_changes=True;
+    print("<+ copy from right to left: " + str(sum_copy_R2L)+" ("+str(math.ceil(size_copy_R2L/1000)/1000)+" MB)")
+if sum_update_L2R>0:
+    flag_changes=True;
+    print(">> update from left to right: "+str(sum_update_L2R)+" ("+str(math.ceil(size_update_L2R/1000)/1000)+" MB)")
+if sum_update_R2L>0:
+    flag_changes=True;
+    print("<< update from right to left: "+str(sum_update_R2L)+" ("+str(math.ceil(size_update_R2L/1000)/1000)+" MB)")
+    
+if flag_changes:
+    response=input("Execute synchronization? (yes/no)")
+    if response=="yes":
+        print("- Executing synchronization")
+        flag_errors=False
+        for file in execute_remove:
+            try:
+                os.remove(file[0])
+            except OSError as e:
+                flag_errors=True
+                print(file[1])
+                print("Error. %s" % e.strerror)
+        for file in execute_copy:
+            try:
+                shutil.copy2(file[0],file[1])
+            except OSError as e:
+                flag_errors=True
+                print(file[2])
+                print("Error. %s" % e.strerror)
+        if flag_errors:
+            print("Synchronization executed, with errors")
+        else:
+            print("Synchronization successful, folders are in sync")
+    else:
+        print("Synchronization not executed")
+else:
+    print('No changes pending, folders are in sync')
 
