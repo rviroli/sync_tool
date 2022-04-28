@@ -182,7 +182,7 @@ for folder_pair in pairs:
                 else:
                     dateComparison=' < '
                     dateComment=' (use older)'
-                log_message=('>> '+f[0][1]+'\t'+
+                log_message=('>> '+f[0][2]+'\t'+
                     datetime.datetime.fromtimestamp(f[0][4]).strftime('%Y-%m-%d-%H:%M')+dateComparison+
                     datetime.datetime.fromtimestamp(f[1][4]).strftime('%Y-%m-%d-%H:%M')+dateComment)
                 execute_copy.append([f[0][2], f[1][2],log_message])
@@ -198,9 +198,10 @@ for folder_pair in pairs:
                 else:
                     dateComparison=' < '
                     dateComment=' (use newer)'
-                log_message=('<< '+f[0][1]+'\t'+str(f[0][4])+'\t'+
+                log_message=('<< '+f[1][2]+'\t'+str(f[0][4])+'\t'+
                     datetime.datetime.fromtimestamp(f[0][4]).strftime('%Y-%m-%d-%H:%M')+dateComparison+
                     datetime.datetime.fromtimestamp(f[1][4]).strftime('%Y-%m-%d-%H:%M')+dateComment)
+                execute_copy.append([f[1][2], f[0][2],log_message])
                 if FLAG_PRINT:
                     print(log_message)
 
@@ -214,7 +215,7 @@ for folder_pair in pairs:
             execute_copy.append([f[2], dest, log_message])
             if FLAG_PRINT:
                 print(log_message)
-        if (sync_mode=='>>') :
+        if (sync_mode=='>>'):
             sum_delete_R += 1
             size_delete_R += f[3]
             log_message=('xx '+f[2])
@@ -232,7 +233,7 @@ for folder_pair in pairs:
             execute_copy.append([f[2], dest, log_message])
             if FLAG_PRINT:
                 print(log_message)
-        if (sync_mode=='<<') :
+        if (sync_mode=='<<'):
             sum_delete_L += 1
             size_delete_L += f[3]
             log_message=('xx '+f[2])
@@ -242,26 +243,26 @@ for folder_pair in pairs:
 
 flag_changes=False # flag set when changes are found between source and destination folder pairs
 if sum_delete_L>0:
-    flag_changes=True;
+    flag_changes=True
     print("xx delete left: "+str(sum_delete_L)+" ("+str(math.ceil(size_delete_L/1000)/1000)+" MB)")
 if sum_delete_R>0:
-    flag_changes=True;
+    flag_changes=True
     print("xx delete right: "+str(sum_delete_R)+" ("+str(math.ceil(size_delete_R/1000)/1000)+" MB)")
 if sum_copy_L2R>0:
-    flag_changes=True;
+    flag_changes=True
     print("+> copy from left to right: " + str(sum_copy_L2R)+" ("+str(math.ceil(size_copy_L2R/1000)/1000)+" MB)")
 if sum_copy_R2L>0:
-    flag_changes=True;
+    flag_changes=True
     print("<+ copy from right to left: " + str(sum_copy_R2L)+" ("+str(math.ceil(size_copy_R2L/1000)/1000)+" MB)")
 if sum_update_L2R>0:
-    flag_changes=True;
+    flag_changes=True
     print(">> update from left to right: "+str(sum_update_L2R)+" ("+str(math.ceil(size_update_L2R/1000)/1000)+" MB)")
 if sum_update_R2L>0:
-    flag_changes=True;
+    flag_changes=True
     print("<< update from right to left: "+str(sum_update_R2L)+" ("+str(math.ceil(size_update_R2L/1000)/1000)+" MB)")
     
 if flag_changes:
-    response=input("Execute synchronization? (yes/no)")
+    response=input("- Execute synchronization? (yes/no)")
     if response=="yes":
         print("- Executing synchronization")
         flag_errors=False
@@ -271,14 +272,14 @@ if flag_changes:
             except OSError as e:
                 flag_errors=True
                 print(file[1])
-                print("Error. %s" % e.strerror)
+                print("Error: %s" % e.strerror)
         for file in execute_copy:
             try:
-                shutil.copy2(file[0],file[1])
+                shutil.copy2(file[0], file[1])
             except OSError as e:
                 flag_errors=True
                 print(file[2])
-                print("Error. %s" % e.strerror)
+                print("Error: %s" % e.strerror)
         if flag_errors:
             print("Synchronization executed, with errors")
         else:
