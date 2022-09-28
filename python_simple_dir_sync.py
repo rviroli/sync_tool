@@ -6,7 +6,7 @@ import math
 
 FLAG_DBG =    False     # Debug output
 FLAG_PRINT =  True      # List all sync actions 
-
+FLAG_MATCH =  True      # Search for moved/renamed files
 BUF_SIZE = 65536
 
 
@@ -16,27 +16,29 @@ BUF_SIZE = 65536
 ## sync_mode = '>>' # mirror (copy and update/revert and delete) src to dest
 ## sync_mode = '<<' # mirror (copy and update/revert and delete) dest to src
 
-##pairs=[
-##       ['D:\\Pictures\\2022' , 'F:\\photos\\2022' , '<>'],
+pairs=[
+       ['D:\\Pictures\\2022' , 'F:\\photos\\2022' , '>'],
 ##       ['D:\\Pictures\\2021' , 'F:\\photos\\2021' , '<>'],
-##       ['D:\\Documents\\Ref_Docs','F:\\Fichiers\\Ref_Docs','>>'],
+       ['D:\\Documents\\Ref_Docs','F:\\Fichiers\\Ref_Docs','<>'],
 ##       ['D:\\Documents\\tmp' , 'F:\\\Fichiers\\_Unsorted' , '>'],
 ##       ['D:\\Downloads' , 'F:\\\Fichiers\\_Unsorted' , '>'],
-##       ['D:\\Documents\\papiers' , 'F:\\\Fichiers\\papiers' , '>'],
-##       ['D:\\Documents\\DIY' , 'F:\\\Fichiers\\DIY' , '>'],
+       ['D:\\Documents\\papiers' , 'F:\\\Fichiers\\papiers' , '<>'],
+       ['D:\\Documents\\DIY' , 'F:\\\Fichiers\\DIY' , '>'],
 ##       ['D:\\Documents\\magazines' , 'F:\\books\\magazines' , '>'],
-##       ['D:\\Documents\\MAO' , 'F:\\Fichiers\\MAO' , '>'],
-##       ['D:\\Documents\\Programmation' , 'F:\\Fichiers\\Programmation' , '>'],
+       ['D:\\Documents\\MAO' , 'F:\\Fichiers\\MAO' , '>'],
+       ['D:\\Documents\\Programmation' , 'F:\\Fichiers\\Programmation' , '>'],
 ##       ['D:\\Documents\\Recettes' , 'F:\\Fichiers\\recettes' , '>'],
-##      ]
-
-pairs=[
+      ]
+##pairs=[
+##       ['F:\\Fichiers\\Ref_Docs','F:\\_Ref_Docs_arch','<>'],
+##    ]
+##pairs=[
 ##       ['F:\\books' , 'E:\\books' , '>>'],
-       ['F:\\Fichiers' , 'E:\\Fichiers' , '>>'],
+##       ['F:\\Fichiers' , 'E:\\Fichiers' , '>>'],
 ##       ['F:\\Logiciels' , 'E:\\Logiciels' , '>>'],
 ##       ['F:\\photos' , 'E:\\photos' , '>>'],
 ##       ['F:\\music' , 'E:\\music' , '>>'],
-      ]
+##      ]
 
 ##pairs=[
 ##       ['F:\\Fichiers\\Ref_Docs' , 'E:\\Fichiers\\Ref_Docs' , '>>'],
@@ -55,6 +57,11 @@ pairs=[
 ##      ]
 
 
+#pairs=[
+ #       ['F:\\Fichiers\\Ref_Docs_w2022\\Aerospace' , 'D:\\Documents\\Ref_Docs\\Engineering\\Aerospace' , '>'],
+        #['F:\\Fichiers\\Ref_Docs_w2022\\General_eng' , 'D:\\Documents\\Ref_Docs\\Engineering\\General_eng' , '>'],
+        #['F:\\Fichiers\\Ref_Docs_w2022\\math' , 'D:\\Documents\\Ref_Docs\\Engineering\\math' , '>'],
+ #     ]
 
 ignore_str=['SyncToy' , '_ignored'] # ignore files/path containing this string
 
@@ -163,21 +170,27 @@ for folder_pair in pairs:
             
         if (len(src_files)<1):
             while len(dest_files)>0:
+                if any(ign_str in dest_files[-1][1] for ign_str in ignore_str):
+                    dest_files.pop()
+                else:
 ##                print('B only: '+dest_files[-1][1])
-                dest_only_files.append(dest_files[-1])
-                dest_files.pop()
+                    dest_only_files.append(dest_files[-1])
+                    dest_files.pop()
             break
         elif (len(dest_files)<1):
             while len(src_files)>0:
+                if any(ign_str in src_files[-1][1] for ign_str in ignore_str):
+                    src_files.pop()
+                else:
 ##                print('A only: '+src_files[-1][1])
-                src_only_files.append(src_files[-1])
-                src_files.pop()
+                    src_only_files.append(src_files[-1])
+                    src_files.pop()
             break
 
 
         
     # try to find matching files (with different names/locations) but same content
-    if True: # @todo: Add flag
+    if FLAG_MATCH: # @todo: Add flag
         print('- Finding matching files...')
         src_only_files.sort(key=lambda x: x[3], reverse=True)
         dest_only_files.sort(key=lambda x: x[3], reverse=False)
@@ -231,6 +244,7 @@ for folder_pair in pairs:
                             else:
                                 left_only_files.append(f)
                                 src_only_files.pop()
+                                break
                     elif (f[3] < g[3]):
                         left_only_files.append(f)
                         src_only_files.pop()
